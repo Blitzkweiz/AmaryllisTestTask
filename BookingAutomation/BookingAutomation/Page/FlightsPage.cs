@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace BookingAutomation.Model
+namespace BookingAutomation.Page
 {
     public class FlightsPage : BasePage
     {
