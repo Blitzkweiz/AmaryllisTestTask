@@ -8,21 +8,32 @@ namespace MetaWeatherAutomation
 {
     public class MetaWeatherTests
     {
+        HttpClient httpClient;
+
+        [OneTimeSetUp]
+        public void OneTimeSetUp()
+        {
+            httpClient = new HttpClient();
+        }
+
+        [OneTimeTearDown]
+        public void OneTimeTearDown()
+        {
+            httpClient.Dispose();
+        }
+
         [TestCase("min", "Minsk")]
         public async Task SearchPatternTest(string searchPattern, string expectedLocation)
         {
-            using (var httpClient = new HttpClient())
+            using (var request = new HttpRequestMessage(new HttpMethod("GET"), $"https://www.metaweather.com/api/location/search/?query={searchPattern}"))
             {
-                using (var request = new HttpRequestMessage(new HttpMethod("GET"), $"https://www.metaweather.com/api/location/search/?query={searchPattern}"))
+                var response = await httpClient.SendAsync(request);
+                using (HttpContent content = response.Content)
                 {
-                    var response = await httpClient.SendAsync(request);
-                    using (HttpContent content = response.Content)
-                    {
-                        var jsonString = await content.ReadAsStringAsync();
-                        List<WeatherReport> data = Newtonsoft.Json.JsonConvert.DeserializeObject<List<WeatherReport>>(jsonString);
+                    var jsonString = await content.ReadAsStringAsync();
+                    List<WeatherReport> data = Newtonsoft.Json.JsonConvert.DeserializeObject<List<WeatherReport>>(jsonString);
 
-                        Assert.True(data.Exists(x => x.title == expectedLocation));
-                    }
+                    Assert.True(data.Exists(x => x.title == expectedLocation));
                 }
             }
         }
@@ -31,18 +42,15 @@ namespace MetaWeatherAutomation
         [TestCase(51.481583, -3.179090, "Cardiff")]
         public async Task LattLongMatchTest(double lattitude, double longitude, string expectedLocation)
         {
-            using (var httpClient = new HttpClient())
+            using (var request = new HttpRequestMessage(new HttpMethod("GET"), $"https://www.metaweather.com/api/location/search/?lattlong={lattitude},{longitude}"))
             {
-                using (var request = new HttpRequestMessage(new HttpMethod("GET"), $"https://www.metaweather.com/api/location/search/?lattlong={lattitude},{longitude}"))
+                var response = await httpClient.SendAsync(request);
+                using (HttpContent content = response.Content)
                 {
-                    var response = await httpClient.SendAsync(request);
-                    using (HttpContent content = response.Content)
-                    {
-                        var jsonString = await content.ReadAsStringAsync();
-                        List<WeatherReport> data = Newtonsoft.Json.JsonConvert.DeserializeObject<List<WeatherReport>>(jsonString);
+                    var jsonString = await content.ReadAsStringAsync();
+                    List<WeatherReport> data = Newtonsoft.Json.JsonConvert.DeserializeObject<List<WeatherReport>>(jsonString);
 
-                        Assert.AreEqual(data[0].title, expectedLocation);
-                    }
+                    Assert.AreEqual(data[0].title, expectedLocation);
                 }
             }
         }
@@ -50,18 +58,15 @@ namespace MetaWeatherAutomation
         [Test]
         public async Task ActualMinskWeatherReportTest()
         {
-            using (var httpClient = new HttpClient())
+            using (var request = new HttpRequestMessage(new HttpMethod("GET"), "https://www.metaweather.com/api/location/834463/"))
             {
-                using (var request = new HttpRequestMessage(new HttpMethod("GET"), "https://www.metaweather.com/api/location/834463/"))
+                var response = await httpClient.SendAsync(request);
+                using (HttpContent content = response.Content)
                 {
-                    var response = await httpClient.SendAsync(request);
-                    using (HttpContent content = response.Content)
-                    {
-                        var jsonString = await content.ReadAsStringAsync();
-                        WeatherReport data = Newtonsoft.Json.JsonConvert.DeserializeObject<WeatherReport>(jsonString);
+                    var jsonString = await content.ReadAsStringAsync();
+                    WeatherReport data = Newtonsoft.Json.JsonConvert.DeserializeObject<WeatherReport>(jsonString);
 
-                        Assert.True(data.title == "Minsk");
-                    }
+                    Assert.True(data.title == "Minsk");
                 }
             }
         }
@@ -69,20 +74,17 @@ namespace MetaWeatherAutomation
         [TestCase(44418, 1, 20)]
         public async Task TemperatureTest(int woeid, double minTemperature, double maxTemperature)
         {
-            using (var httpClient = new HttpClient())
+            using (var request = new HttpRequestMessage(new HttpMethod("GET"), $"https://www.metaweather.com/api/location/{woeid}/"))
             {
-                using (var request = new HttpRequestMessage(new HttpMethod("GET"), $"https://www.metaweather.com/api/location/{woeid}/"))
+                var response = await httpClient.SendAsync(request);
+                using (HttpContent content = response.Content)
                 {
-                    var response = await httpClient.SendAsync(request);
-                    using (HttpContent content = response.Content)
-                    {
-                        var jsonString = await content.ReadAsStringAsync();
-                        WeatherReport data = Newtonsoft.Json.JsonConvert.DeserializeObject<WeatherReport>(jsonString);
+                    var jsonString = await content.ReadAsStringAsync();
+                    WeatherReport data = Newtonsoft.Json.JsonConvert.DeserializeObject<WeatherReport>(jsonString);
 
-                        foreach(ConsolidatedWeather weather in data.consolidated_weather)
-                        {
-                            Assert.True(minTemperature < weather.the_temp && weather.the_temp < maxTemperature);
-                        }
+                    foreach(ConsolidatedWeather weather in data.consolidated_weather)
+                    {
+                        Assert.True(minTemperature < weather.the_temp && weather.the_temp < maxTemperature);
                     }
                 }
             }
@@ -91,26 +93,23 @@ namespace MetaWeatherAutomation
         [TestCase(44418)]
         public async Task FiveYearsagoTest(int woeid)
         {
-            using (var httpClient = new HttpClient())
+            using (var fiveYearsRequest = new HttpRequestMessage(new HttpMethod("GET"), $"https://www.metaweather.com/api/location/{woeid}/{DateTime.Today.AddYears(-5).ToString("yyyy/M/d")}/"))
             {
-                using (var fiveYearsRequest = new HttpRequestMessage(new HttpMethod("GET"), $"https://www.metaweather.com/api/location/{woeid}/{DateTime.Today.AddYears(-5).ToString("yyyy/M/d")}/"))
+                var fiveYearsResponse = await httpClient.SendAsync(fiveYearsRequest);
+                using (HttpContent fiveYearsContent = fiveYearsResponse.Content)
                 {
-                    var fiveYearsResponse = await httpClient.SendAsync(fiveYearsRequest);
-                    using (HttpContent fiveYearsContent = fiveYearsResponse.Content)
+                    var fiveYearsJsonString = await fiveYearsContent.ReadAsStringAsync();
+                    List<ConsolidatedWeather> fiveYearsData = Newtonsoft.Json.JsonConvert.DeserializeObject<List<ConsolidatedWeather>>(fiveYearsJsonString);
+
+                    using (var todayRequest = new HttpRequestMessage(new HttpMethod("GET"), $"https://www.metaweather.com/api/location/{woeid}/{DateTime.Today.ToString("yyyy/M/d")}/"))
                     {
-                        var fiveYearsJsonString = await fiveYearsContent.ReadAsStringAsync();
-                        List<ConsolidatedWeather> fiveYearsData = Newtonsoft.Json.JsonConvert.DeserializeObject<List<ConsolidatedWeather>>(fiveYearsJsonString);
-
-                        using (var todayRequest = new HttpRequestMessage(new HttpMethod("GET"), $"https://www.metaweather.com/api/location/{woeid}/{DateTime.Today.ToString("yyyy/M/d")}/"))
+                        var todayResponse = await httpClient.SendAsync(todayRequest);
+                        using (HttpContent todayContent = todayResponse.Content)
                         {
-                            var todayResponse = await httpClient.SendAsync(todayRequest);
-                            using (HttpContent todayContent = todayResponse.Content)
-                            {
-                                var todayJsonString = await todayContent.ReadAsStringAsync();
-                                List<ConsolidatedWeather> todayData = Newtonsoft.Json.JsonConvert.DeserializeObject<List<ConsolidatedWeather>>(todayJsonString);
+                            var todayJsonString = await todayContent.ReadAsStringAsync();
+                            List<ConsolidatedWeather> todayData = Newtonsoft.Json.JsonConvert.DeserializeObject<List<ConsolidatedWeather>>(todayJsonString);
 
-                                Assert.True(fiveYearsData.Exists(x => todayData.Exists(item => x.weather_state_name == item.weather_state_name)));
-                            }
+                            Assert.True(fiveYearsData.Exists(x => todayData.Exists(item => x.weather_state_name == item.weather_state_name)));
                         }
                     }
                 }
