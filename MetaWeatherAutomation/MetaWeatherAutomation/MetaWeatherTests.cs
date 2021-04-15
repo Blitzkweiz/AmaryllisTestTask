@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MetaWeatherAutomation
 {
-    public class Tests
+    public class MetaWeatherTests
     {
         [TestCase("min", "Minsk")]
         public async Task SearchPatternTest(string searchPattern, string expectedLocation)
@@ -18,7 +18,7 @@ namespace MetaWeatherAutomation
                     var response = await httpClient.SendAsync(request);
                     using (HttpContent content = response.Content)
                     {
-                        var jsonString = await response.Content.ReadAsStringAsync();
+                        var jsonString = await content.ReadAsStringAsync();
                         List<WeatherReport> data = Newtonsoft.Json.JsonConvert.DeserializeObject<List<WeatherReport>>(jsonString);
 
                         Assert.True(data.Exists(x => x.title == expectedLocation));
@@ -38,7 +38,7 @@ namespace MetaWeatherAutomation
                     var response = await httpClient.SendAsync(request);
                     using (HttpContent content = response.Content)
                     {
-                        var jsonString = await response.Content.ReadAsStringAsync();
+                        var jsonString = await content.ReadAsStringAsync();
                         List<WeatherReport> data = Newtonsoft.Json.JsonConvert.DeserializeObject<List<WeatherReport>>(jsonString);
 
                         Assert.AreEqual(data[0].title, expectedLocation);
@@ -57,7 +57,7 @@ namespace MetaWeatherAutomation
                     var response = await httpClient.SendAsync(request);
                     using (HttpContent content = response.Content)
                     {
-                        var jsonString = await response.Content.ReadAsStringAsync();
+                        var jsonString = await content.ReadAsStringAsync();
                         WeatherReport data = Newtonsoft.Json.JsonConvert.DeserializeObject<WeatherReport>(jsonString);
 
                         Assert.True(data.title == "Minsk");
@@ -76,7 +76,7 @@ namespace MetaWeatherAutomation
                     var response = await httpClient.SendAsync(request);
                     using (HttpContent content = response.Content)
                     {
-                        var jsonString = await response.Content.ReadAsStringAsync();
+                        var jsonString = await content.ReadAsStringAsync();
                         WeatherReport data = Newtonsoft.Json.JsonConvert.DeserializeObject<WeatherReport>(jsonString);
 
                         foreach(ConsolidatedWeather weather in data.consolidated_weather)
